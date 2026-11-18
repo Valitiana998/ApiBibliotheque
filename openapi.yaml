@@ -1,0 +1,285 @@
+openapi: 3.0.3
+info:
+  title: API Bibliothèque
+  version: 1.0.0
+  description: API REST de gestion d'une bibliothèque — Cours 2026
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Serveur de développement
+security:
+  - BearerAuth: []
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Author:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        first_name: { type: string, example: Robert }
+        last_name: { type: string, example: Martin }
+        nationality: { type: string, example: Américaine }
+        books:
+          type: array
+          items: { $ref: '#/components/schemas/Book' }
+    Book:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        title: { type: string, example: Clean Code }
+        isbn: { type: string, example: 978-0132350884 }
+        year: { type: integer, example: 2008 }
+        available: { type: boolean, example: true }
+        author_id: { type: integer, example: 1 }
+        author: { $ref: '#/components/schemas/Author' }
+    Borrow:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        user_name: { type: string, example: Rakoto Jean }
+        book_id: { type: integer, example: 1 }
+        borrowed_at: { type: string, format: date-time }
+        returned_at: { type: string, format: date-time, nullable: true }
+        book: { $ref: '#/components/schemas/Book' }
+    CreateAuthorInput:
+      type: object
+      required: [first_name, last_name, nationality]
+      properties:
+        first_name: { type: string }
+        last_name: { type: string }
+        nationality: { type: string }
+    UpdateAuthorInput:
+      type: object
+      properties:
+        first_name: { type: string }
+        last_name: { type: string }
+        nationality: { type: string }
+    CreateBookInput:
+      type: object
+      required: [title, isbn, year, author_id]
+      properties:
+        title: { type: string }
+        isbn: { type: string }
+        year: { type: integer, minimum: 1000 }
+        available: { type: boolean, default: true }
+        author_id: { type: integer }
+    UpdateBookInput:
+      type: object
+      properties:
+        title: { type: string }
+        isbn: { type: string }
+        year: { type: integer }
+        available: { type: boolean }
+        author_id: { type: integer }
+    BorrowInput:
+      type: object
+      required: [user_name, book_id]
+      properties:
+        user_name: { type: string }
+        book_id: { type: integer }
+    AuthPayload:
+      type: object
+      properties:
+        token: { type: string }
+        user:
+          type: object
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            email: { type: string }
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        data: { nullable: true }
+        message: { type: string }
+        errors: { type: object }
+paths:
+  /auth/login:
+    post:
+      tags: [Authentification]
+      summary: Authentifier un utilisateur
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200': { description: Authentification réussie }
+        '401': { description: Identifiants invalides }
+        '422': { description: Validation échouée }
+  /authors:
+    get:
+      tags: [Authors]
+      summary: Liste tous les auteurs
+      security: []
+      responses:
+        '200': { description: Liste des auteurs }
+        '401': { description: Non authentifié }
+        '404': { description: Ressource introuvable }
+        '422': { description: Validation échouée }
+    post:
+      tags: [Authors]
+      summary: Créer un auteur
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAuthorInput' }
+      responses:
+        '201': { description: Auteur créé }
+        '401': { description: Non authentifié }
+        '404': { description: Ressource introuvable }
+        '422': { description: Validation échouée }
+  /authors/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Authors]
+      summary: Détails d'un auteur
+      security: []
+      responses:
+        '200': { description: Auteur avec ses livres }
+        '401': { description: Non authentifié }
+        '404': { description: Auteur introuvable }
+        '422': { description: Validation échouée }
+    put:
+      tags: [Authors]
+      summary: Modifier un auteur
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateAuthorInput' }
+      responses:
+        '200': { description: Auteur modifié }
+        '401': { description: Non authentifié }
+        '404': { description: Auteur introuvable }
+        '422': { description: Validation échouée }
+    delete:
+      tags: [Authors]
+      summary: Supprimer un auteur
+      security: [{ BearerAuth: [] }]
+      responses:
+        '204': { description: Auteur supprimé }
+        '401': { description: Non authentifié }
+        '404': { description: Auteur introuvable }
+        '422': { description: Validation échouée }
+  /books:
+    get:
+      tags: [Books]
+      summary: Liste les livres
+      security: []
+      parameters:
+        - name: available
+          in: query
+          description: Filtrer par disponibilité
+          schema: { type: boolean }
+      responses:
+        '200': { description: Liste retournée avec succès }
+        '401': { description: Non authentifié }
+        '404': { description: Ressource introuvable }
+        '422': { description: Validation échouée }
+    post:
+      tags: [Books]
+      summary: Ajouter un livre
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateBookInput' }
+      responses:
+        '201': { description: Livre créé }
+        '401': { description: Non authentifié }
+        '404': { description: Ressource introuvable }
+        '422': { description: Validation échouée }
+  /books/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Books]
+      summary: Détails d'un livre
+      security: []
+      responses:
+        '200': { description: Livre avec son auteur }
+        '401': { description: Non authentifié }
+        '404': { description: Livre introuvable }
+        '422': { description: Validation échouée }
+    put:
+      tags: [Books]
+      summary: Modifier un livre
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateBookInput' }
+      responses:
+        '200': { description: Livre modifié }
+        '401': { description: Non authentifié }
+        '404': { description: Livre introuvable }
+        '422': { description: Validation échouée }
+    delete:
+      tags: [Books]
+      summary: Supprimer un livre
+      security: [{ BearerAuth: [] }]
+      responses:
+        '204': { description: Livre supprimé }
+        '401': { description: Non authentifié }
+        '404': { description: Livre introuvable }
+        '422': { description: Validation échouée }
+  /borrows:
+    get:
+      tags: [Borrows]
+      summary: Liste tous les emprunts en cours
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: Liste des emprunts }
+        '401': { description: Non authentifié }
+        '404': { description: Ressource introuvable }
+        '422': { description: Validation échouée }
+    post:
+      tags: [Borrows]
+      summary: Enregistrer un emprunt
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BorrowInput' }
+      responses:
+        '201': { description: Emprunt enregistré }
+        '401': { description: Non authentifié }
+        '404': { description: Ressource introuvable }
+        '422': { description: Livre indisponible ou données invalides }
+  /borrows/{id}/return:
+    patch:
+      tags: [Borrows]
+      summary: Marquer un livre comme rendu
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Livre rendu }
+        '401': { description: Non authentifié }
+        '404': { description: Emprunt introuvable }
+        '422': { description: Validation échouée }

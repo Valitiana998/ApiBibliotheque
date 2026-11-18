@@ -1,0 +1,12 @@
+{
+  "name": "API Bibliothèque — Production",
+  "values": [
+    { "key": "base_url", "value": "https://api.mabibliotheque.com/v1", "enabled": true },
+    { "key": "token", "value": "", "enabled": true },
+    { "key": "book_id", "value": "1", "enabled": true },
+    { "key": "author_id", "value": "1", "enabled": true },
+    { "key": "borrow_id", "value": "1", "enabled": true }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_using": "Postman"
+}
