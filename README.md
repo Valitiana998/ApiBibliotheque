@@ -43,6 +43,25 @@ Le token retourné doit être envoyé ainsi :
 Authorization: Bearer {token}
 ```
 
+## Intégrations OpenAI et Stripe
+
+Copiez les variables ci-dessous dans votre fichier `.env` (ne publiez jamais leurs valeurs). Les clés OpenAI et Stripe sont facultatives pour les API historiques, mais nécessaires aux fonctions correspondantes.
+
+```dotenv
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+Les API OpenAI compatibles, par exemple Google AI Studio, Groq ou OpenRouter, peuvent être configurées avec leur URL de base et leur identifiant de modèle. Après une migration, appliquez les nouvelles colonnes avec `php artisan migrate`.
+
+Nouveaux endpoints : `POST /api/v1/books/{id}/summary` (JWT), `GET /api/v1/books/{id}/summary`, `POST /api/v1/books/smart-search`, `POST /api/v1/subscriptions/payment-intent` (JWT), `GET /api/v1/subscriptions/status` (JWT) et `POST /api/v1/webhooks/stripe` (signature Stripe).
+
+Le webhook vérifie la signature `Stripe-Signature` contre `STRIPE_WEBHOOK_SECRET` et refuse les signatures absentes, incorrectes ou âgées de plus de cinq minutes. Pour un test local avec Stripe CLI, utilisez le secret `whsec_...` fourni par `stripe listen`.
+
 ## Postman
 Importer `postman/collection_bibliotheque_Etudiant.json`, puis importer les fichiers `env_dev_Etudiant.json` et `env_prod_Etudiant.json`.
 

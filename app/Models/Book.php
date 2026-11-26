@@ -11,9 +11,9 @@ class Book extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'isbn', 'year', 'available', 'author_id'];
+    protected $fillable = ['title', 'isbn', 'year', 'available', 'author_id', 'summary'];
 
-    protected $casts = ['year' => 'integer', 'available' => 'boolean'];
+    protected $casts = ['year' => 'integer', 'available' => 'boolean', 'summary_generated_at' => 'datetime'];
 
     public function author(): BelongsTo
     {

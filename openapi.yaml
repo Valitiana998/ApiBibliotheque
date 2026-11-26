@@ -97,6 +97,21 @@ components:
         data: { nullable: true }
         message: { type: string }
         errors: { type: object }
+    SummaryResponse:
+      type: object
+      properties:
+        book_id: { type: integer, example: 1 }
+        title: { type: string, example: Clean Code }
+        summary: { type: string, example: Un guide pour écrire du code lisible et maintenable. }
+        generated_by: { type: string, example: gpt-4o-mini }
+        generated_at: { type: string, format: date-time }
+    PaymentIntentResponse:
+      type: object
+      properties:
+        client_secret: { type: string, example: pi_3Px_secret_abc }
+        amount: { type: integer, example: 500 }
+        currency: { type: string, example: eur }
+        publishable_key: { type: string, example: pk_test_abc }
 paths:
   /auth/login:
     post:
@@ -207,6 +222,107 @@ paths:
         '401': { description: Non authentifié }
         '404': { description: Ressource introuvable }
         '422': { description: Validation échouée }
+  /books/{id}/summary:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Books]
+      summary: Retourner le résumé déjà enregistré
+      security: []
+      responses:
+        '200':
+          description: Résumé existant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SummaryResponse' }
+        '401': { description: Non authentifié }
+        '404': { description: Livre ou résumé introuvable }
+        '422': { description: Validation échouée }
+        '503': { description: Service de résumé indisponible }
+    post:
+      tags: [Books]
+      summary: Générer et enregistrer un résumé avec OpenAI
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Résumé généré ou résumé déjà existant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SummaryResponse' }
+        '401': { description: Non authentifié }
+        '404': { description: Livre introuvable }
+        '422': { description: Validation échouée }
+        '503': { description: Service OpenAI indisponible ou non configuré }
+  /books/smart-search:
+    post:
+      tags: [Books]
+      summary: Recherche de livres à partir d'une description naturelle
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string, example: un livre sur les bonnes pratiques Java }
+      responses:
+        '200': { description: Mots-clés extraits et livres correspondants retournés; search_mode vaut ai ou local_fallback }
+        '401': { description: Non authentifié }
+        '404': { description: Ressource introuvable }
+        '422': { description: Requête invalide }
+        '503': { description: Service OpenAI indisponible ou non configuré }
+  /subscriptions/payment-intent:
+    post:
+      tags: [Subscriptions]
+      summary: Créer un PaymentIntent Stripe de 5 EUR
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: PaymentIntent prêt à être confirmé côté client
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentIntentResponse' }
+        '401': { description: Non authentifié }
+        '404': { description: Ressource introuvable }
+        '422': { description: Données invalides }
+        '503': { description: Stripe indisponible ou non configuré }
+  /subscriptions/status:
+    get:
+      tags: [Subscriptions]
+      summary: Consulter le statut d'abonnement de l'utilisateur connecté
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: Statut free ou premium }
+        '401': { description: Non authentifié }
+        '404': { description: Utilisateur introuvable }
+        '422': { description: Validation échouée }
+        '503': { description: Service indisponible }
+  /webhooks/stripe:
+    post:
+      tags: [Webhooks]
+      summary: Recevoir un événement Stripe signé
+      security: []
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Événement reçu }
+        '401': { description: Signature absente ou invalide }
+        '404': { description: Ressource introuvable }
+        '422': { description: Événement invalide }
+        '503': { description: Traitement temporairement indisponible }
   /books/{id}:
     parameters:
       - name: id

@@ -20,6 +20,7 @@ class BorrowController
 
     public function store(Request $request)
     {
+        $user = $request->attributes->get('jwt_user');
         $validator = Validator::make($request->all(), [
             'user_name' => 'required|string|max:255',
             'book_id' => 'required|integer|exists:books,id',
@@ -38,7 +39,7 @@ class BorrowController
             ], 422);
         }
 
-        $borrow = DB::transaction(function () use ($request) {
+        $borrow = DB::transaction(function () use ($request, $user) {
             $book = Book::whereKey($request->book_id)->lockForUpdate()->first();
             if (!$book->available) {
                 throw new \RuntimeException('Le livre n’est pas disponible');
@@ -46,9 +47,11 @@ class BorrowController
             $book->update(['available' => false]);
             return Borrow::create([
                 'user_name' => $request->user_name,
+                'user_id' => $user?->id,
                 'book_id' => $book->id,
                 'borrowed_at' => now(),
                 'returned_at' => null,
+                'payment_status' => $user?->subscription_status === 'premium' ? 'paid' : 'free',
             ]);
         });
 
